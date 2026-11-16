@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sendero Cóndor Machay · Recorrido inmersivo accesible</title>
+  <meta name="description" content="Recorrido virtual inmersivo y accesible por el sendero de la cascada Cóndor Machay (Rumiñahui, Ecuador) para personas con discapacidad física.">
+  <link rel="stylesheet" href="css/estilos.css">
+  <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+  <script src="js/componentes.js"></script>
+</head>
+<body>
+  <a class="saltar" href="#controles">Saltar a los controles</a>
+
+  <!-- ====== Escena inmersiva (A-Frame / WebXR) ====== -->
+  <a-scene id="escena"
+           renderer="colorManagement: true; antialias: true"
+           webxr="referenceSpaceType: local"
+           cursor="rayOrigin: mouse"
+           raycaster="objects: .clicable"
+           loading-screen="dotsColor: #ffd23f; backgroundColor: #10261b"
+           device-orientation-permission-ui="enabled: true"
+           aria-hidden="true">
+    <a-assets timeout="30000"></a-assets>
+
+    <a-sky id="cielo" radius="100" color="#10261b"></a-sky>
+    <a-entity id="puntos"></a-entity>
+    <a-entity id="panel-vr" visible="false"></a-entity>
+
+    <a-entity id="rig">
+      <a-entity id="camara" camera position="0 0 0"
+                look-controls="magicWindowTrackingEnabled: true; reverseMouseDrag: false"
+                wasd-controls="enabled: false">
+        <a-entity id="cursor-mirada"
+                  cursor="fuse: true; fuseTimeout: 2000"
+                  raycaster="objects: .clicable; far: 60"
+                  position="0 0 -1"
+                  geometry="primitive: ring; radiusInner: 0.012; radiusOuter: 0.02"
+                  material="color: #ffffff; shader: flat; opacity: 0.9"
+                  animation__fusing="property: scale; startEvents: fusing; from: 1 1 1; to: 2.2 2.2 2.2; dur: 2000"
+                  animation__salir="property: scale; startEvents: mouseleave; to: 1 1 1; dur: 150"
+                  animation__clic="property: scale; startEvents: click; to: 1 1 1; dur: 150"></a-entity>
+        <a-plane id="fundido-vr" position="0 0 -0.2" width="2" height="2"
+                 material="color: #000; shader: flat; transparent: true; opacity: 0"></a-plane>
+      </a-entity>
+      <a-entity id="mano-der" laser-controls="hand: right" raycaster="objects: .clicable; far: 60" giro-por-pasos></a-entity>
+      <a-entity id="mano-izq" laser-controls="hand: left" raycaster="objects: .clicable; far: 60" giro-por-pasos></a-entity>
+    </a-entity>
+  </a-scene>
+
+  <div id="fundido" aria-hidden="true"></div>
+
+  <!-- ====== Encabezado ====== -->
+  <header id="encabezado">
+    <p id="progreso" class="progreso">Parada 1 de 6</p>
+    <h1 id="titulo-escena">Inicio del sendero</h1>
+    <p id="titulo-kichwa" class="kichwa" lang="qu"></p>
+  </header>
+
+  <p id="aviso-referencial" class="aviso-referencial">Imágenes referenciales · no corresponden al sitio real</p>
+
+  <!-- Anuncios para lectores de pantalla -->
+  <div id="anuncio" class="solo-lector" aria-live="assertive"></div>
+
+  <!-- ====== Subtítulos ====== -->
+  <div id="subtitulos" class="subtitulos" aria-live="polite" hidden></div>
+
+  <!-- ====== Indicadores de modo ====== -->
+  <div id="indicadores" class="indicadores">
+    <span id="ind-voz" class="indicador" hidden>🎙️ Escuchando: di «siguiente», «anterior», «izquierda», «derecha», «narrar», «ayuda»</span>
+    <span id="ind-barrido" class="indicador" hidden>⏺ Modo un botón: pulsa ESPACIO, ENTER o haz clic para elegir</span>
+    <span id="ind-auto" class="indicador" hidden>▶ Recorrido automático</span>
+  </div>
+
+  <!-- ====== Barra de controles ====== -->
+  <nav id="controles" class="controles" aria-label="Controles del recorrido">
+    <button type="button" data-accion="anterior" data-escaneable aria-keyshortcuts="ArrowDown">
+      <span class="ico" aria-hidden="true">⏮</span><span class="txt">Anterior</span></button>
+    <button type="button" data-accion="girar-izq" data-escaneable aria-keyshortcuts="ArrowLeft">
+      <span class="ico" aria-hidden="true">↺</span><span class="txt">Girar izq.</span></button>
+    <button type="button" data-accion="narrar" data-escaneable aria-keyshortcuts="L">
+      <span class="ico" aria-hidden="true">🔊</span><span class="txt">Narrar</span></button>
+    <button type="button" data-accion="info" data-escaneable aria-keyshortcuts="I">
+      <span class="ico" aria-hidden="true">ℹ️</span><span class="txt">Información</span></button>
+    <button type="button" data-accion="mapa" data-escaneable aria-keyshortcuts="M">
+      <span class="ico" aria-hidden="true">🗺️</span><span class="txt">Mapa</span></button>
+    <button type="button" data-accion="girar-der" data-escaneable aria-keyshortcuts="ArrowRight">
+      <span class="ico" aria-hidden="true">↻</span><span class="txt">Girar der.</span></button>
+    <button type="button" data-accion="siguiente" data-escaneable class="primario" aria-keyshortcuts="ArrowUp">
+      <span class="ico" aria-hidden="true">⏭</span><span class="txt">Siguiente</span></button>
+    <button type="button" data-accion="ajustes" data-escaneable aria-keyshortcuts="A">
+      <span class="ico" aria-hidden="true">⚙️</span><span class="txt">Ajustes</span></button>
+  </nav>
+
+  <!-- ====== Bienvenida ====== -->
+  <dialog id="dlg-bienvenida" class="dialogo" aria-labelledby="bv-titulo">
+    <h2 id="bv-titulo">Sendero a la cascada Cóndor Machay</h2>
+    <p class="sub">Rumipamba · Rumiñahui · Pichincha, Ecuador</p>
+    <p>Recorre en realidad virtual el sendero y la cascada <strong>Cóndor Machay</strong> («refugio del cóndor» en kichwa), sin barreras físicas.
+       Puedes usarlo en computadora, celular o visor de realidad virtual, <strong>sentado</strong> y a tu propio ritmo.</p>
+
+    <fieldset>
+      <legend>¿Cómo prefieres controlar el recorrido? <span class="nota">(puedes elegir varias opciones)</span></legend>
+      <p class="nota">El ratón, la pantalla táctil y el teclado siempre funcionan: flechas ← → para girar, ↑ ↓ para avanzar o regresar.</p>
+      <label class="opcion"><input type="checkbox" id="bv-barrido"> ⏺ Un solo botón o pulsador (barrido automático)</label>
+      <label class="opcion"><input type="checkbox" id="bv-voz"> 🎙️ Comandos de voz</label>
+      <label class="opcion"><input type="checkbox" id="bv-mirada"> 👁️ Mirada: mirar fijo 2 segundos para seleccionar (celular o visor)</label>
+      <label class="opcion"><input type="checkbox" id="bv-auto"> ▶ Recorrido automático (sin tener que pulsar nada)</label>
+    </fieldset>
+
+    <p class="aviso">⚠️ Las imágenes 360° son <strong>referenciales</strong> (licencia CC0, Poly Haven) y no corresponden al sitio real.
+       El sendero real permanece cerrado por riesgo de derrumbes desde agosto de 2025.</p>
+
+    <div class="acciones">
+      <button type="button" id="bv-comenzar" class="primario grande" data-escaneable autofocus>Comenzar recorrido</button>
+    </div>
+  </dialog>
+
+  <!-- ====== Información ====== -->
+  <dialog id="dlg-info" class="dialogo" aria-labelledby="info-titulo">
+    <h2 id="info-titulo">Información</h2>
+    <div id="info-contenido"></div>
+    <div class="acciones">
+      <button type="button" id="info-leer" data-escaneable>🔊 Leer en voz alta</button>
+      <button type="button" class="primario" data-cerrar data-escaneable>Cerrar</button>
+    </div>
+  </dialog>
+
+  <!-- ====== Mapa ====== -->
+  <dialog id="dlg-mapa" class="dialogo" aria-labelledby="mapa-titulo">
+    <h2 id="mapa-titulo">Mapa del sendero</h2>
+    <p class="sub">Elige una parada para ir directamente.</p>
+    <ol id="mapa-lista" class="mapa-lista"></ol>
+    <div class="acciones">
+      <button type="button" class="primario" data-cerrar data-escaneable>Cerrar</button>
+    </div>
+  </dialog>
+
+  <!-- ====== Ajustes ====== -->
+  <dialog id="dlg-ajustes" class="dialogo" aria-labelledby="aj-titulo">
+    <h2 id="aj-titulo">Ajustes de accesibilidad</h2>
+    <form id="form-ajustes" method="dialog">
+      <fieldset>
+        <legend>Visión y lectura</legend>
+        <label class="opcion"><input type="checkbox" name="textoGrande"> Texto grande</label>
+        <label class="opcion"><input type="checkbox" name="altoContraste"> Alto contraste</label>
+        <label class="opcion"><input type="checkbox" name="subtitulos"> Mostrar subtítulos</label>
+        <label class="opcion"><input type="checkbox" name="kichwa"> Mostrar nombres en kichwa</label>
+      </fieldset>
+      <fieldset>
+        <legend>Audio</legend>
+        <label class="opcion"><input type="checkbox" name="narracionAuto"> Narrar al llegar a cada parada</label>
+        <label class="campo">Velocidad de la voz
+          <select name="velocidadVoz">
+            <option value="0.8">Lenta</option>
+            <option value="1">Normal</option>
+            <option value="1.2">Rápida</option>
+          </select></label>
+        <label class="campo">Sonido ambiente (agua y aves)
+          <input type="range" name="volumenAmbiente" min="0" max="1" step="0.1"></label>
+      </fieldset>
+      <fieldset>
+        <legend>Control y movimiento</legend>
+        <label class="opcion"><input type="checkbox" name="barrido"> Modo un solo botón (barrido)</label>
+        <label class="campo">Velocidad del barrido
+          <select name="intervaloBarrido">
+            <option value="1500">Rápida (1,5 s)</option>
+            <option value="2500">Media (2,5 s)</option>
+            <option value="4000">Lenta (4 s)</option>
+          </select></label>
+        <label class="opcion"><input type="checkbox" name="voz"> Comandos de voz</label>
+        <label class="opcion"><input type="checkbox" name="mirada"> Selección por mirada</label>
+        <label class="campo">Tiempo de mirada
+          <select name="tiempoMirada">
+            <option value="1500">1,5 s</option>
+            <option value="2000">2 s</option>
+            <option value="3000">3 s</option>
+          </select></label>
+        <label class="campo">Giro
+          <select name="giro">
+            <option value="pasos">Por pasos de 30° (recomendado contra el mareo)</option>
+            <option value="suave">Suave</option>
+          </select></label>
+        <label class="opcion"><input type="checkbox" name="reducirAnimaciones"> Reducir animaciones</label>
+        <label class="opcion"><input type="checkbox" name="recorridoAuto"> Recorrido automático</label>
+      </fieldset>
+      <div class="acciones">
+        <button type="button" id="aj-restablecer" data-escaneable>Restablecer</button>
+        <button type="button" class="primario" data-cerrar data-escaneable>Listo</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="js/escenas.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
