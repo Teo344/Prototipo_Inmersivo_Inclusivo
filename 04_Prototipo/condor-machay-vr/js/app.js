@@ -169,6 +169,18 @@
     const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, side: THREE.DoubleSide, alphaTest: 0.02 });
     return new THREE.Mesh(new THREE.PlaneGeometry(ancho, ancho * c.height / c.width), mat);
   }
+  function vaciarMallas(contenedor) {
+    while (contenedor.firstChild) {
+      const el = contenedor.firstChild;
+      const malla = el.getObject3D('mesh');
+      contenedor.removeChild(el);
+      if (malla) {
+        malla.geometry.dispose();
+        malla.material.map.dispose();
+        malla.material.dispose();
+      }
+    }
+  }
   // Coloca la entidad en p y la orienta hacia el usuario (origen).
   function orientarHaciaUsuario(el, p) {
     const o = new THREE.Object3D();
@@ -193,7 +205,7 @@
   }
 
   function construirPuntos(e) {
-    while (puntos.firstChild) puntos.removeChild(puntos.firstChild);
+    vaciarMallas(puntos);
     const i = ESC.indexOf(e);
     if (e.siguiente) {
       const s = ESC[i + 1];
@@ -231,7 +243,7 @@
     panelVR.setAttribute('visible', true);
   }
   function cerrarPanelVR() {
-    while (panelVR.firstChild) panelVR.removeChild(panelVR.firstChild);
+    vaciarMallas(panelVR);
     panelVR.setAttribute('visible', false);
   }
 
@@ -256,25 +268,42 @@
     return esperar(dur + 30);
   }
 
-  function cargarCielo(src) {
-    return new Promise((res) => {
-      if (src === srcActual) { res(); return; }
+  const imagenes = new Map();
+  function cargarImagen(src) {
+    if (imagenes.has(src)) return imagenes.get(src);
+    const carga = new Promise((res, rechazar) => {
+      const im = new Image();
       let hecho = false;
-      const fin = () => {
+      const fin = (error) => {
         if (hecho) return;
         hecho = true;
-        cielo.removeEventListener('materialtextureloaded', fin);
-        res();
+        clearTimeout(temporizador);
+        im.onload = im.onerror = null;
+        if (error) rechazar(error); else res(im);
       };
-      cielo.addEventListener('materialtextureloaded', fin);
-      cielo.setAttribute('material', { src: src, color: '#ffffff', shader: 'flat', side: 'back', npot: true });
-      srcActual = src;
-      setTimeout(fin, 12000);
+      const temporizador = setTimeout(() => fin(new Error('Tiempo agotado al cargar: ' + src)), 12000);
+      im.crossOrigin = 'anonymous';
+      im.onload = () => {
+        if (im.decode) im.decode().then(() => fin(), fin); else fin();
+      };
+      im.onerror = () => fin(new Error('No se pudo cargar: ' + src));
+      im.src = src;
     });
+    imagenes.set(src, carga);
+    carga.catch(() => imagenes.delete(src));
+    return carga;
+  }
+
+  async function cargarCielo(src) {
+    if (src === srcActual) return;
+    const im = await cargarImagen(src);
+    // A-Frame puede reutilizar la textura sin emitir materialtextureloaded.
+    cielo.setAttribute('material', { src: im, color: '#ffffff', shader: 'flat', side: 'back', npot: true });
+    srcActual = src;
   }
 
   function precargar(i) {
-    if (ESC[i]) { const im = new Image(); im.src = ESC[i].imagen; }
+    if (ESC[i]) cargarImagen(ESC[i].imagen).catch(() => { /* se reintenta al navegar */ });
   }
 
   function reiniciarMirada() {
@@ -295,20 +324,23 @@
     cancelarAuto();
     Narrador.detener();
     cerrarPanelVR();
-    await fundir(1);
-
     const e = ESC[i];
-    indice = i;
-    await cargarCielo(e.imagen);
-    construirPuntos(e);
-    yawRig = yawParaU(e.mirarU);
-    rig.object3D.rotation.y = yawRig;
-    reiniciarMirada();
-    actualizarUI();
-    Ambiente.ajustar(e.agua, e.aves);
-
-    await fundir(0);
-    transicionando = false;
+    try {
+      await fundir(1);
+      await cargarCielo(e.imagen);
+      indice = i;
+      construirPuntos(e);
+      yawRig = yawParaU(e.mirarU);
+      rig.object3D.rotation.y = yawRig;
+      reiniciarMirada();
+      actualizarUI();
+      Ambiente.ajustar(e.agua, e.aves);
+    } catch (error) {
+      console.error('No se pudo cambiar de parada.', error);
+      return;
+    } finally {
+      try { await fundir(0); } finally { transicionando = false; }
+    }
     precargar(i + 1);
     precargar(i - 1);
 
@@ -845,6 +877,17 @@
   }
   if (saltarBienvenida) {
     recorridoIniciado = true;
+    // Sin bienvenida no hubo clic en «Comenzar»: el navegador solo permite iniciar
+    // el audio tras una interacción, así que el sonido ambiente arranca con la primera.
+    const activarAudio = () => {
+      document.removeEventListener('pointerdown', activarAudio, true);
+      document.removeEventListener('keydown', activarAudio, true);
+      Ambiente.iniciar();
+      const e = ESC[indice];
+      Ambiente.ajustar(e.agua, e.aves);
+    };
+    document.addEventListener('pointerdown', activarAudio, true);
+    document.addEventListener('keydown', activarAudio, true);
   } else {
     dlgBienvenida.showModal();
     dlgBienvenida.scrollTop = 0;
