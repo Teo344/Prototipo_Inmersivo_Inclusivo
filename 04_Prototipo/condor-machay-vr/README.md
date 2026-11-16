@@ -14,9 +14,11 @@ Hecho con **A-Frame 1.6 (WebXR)**: funciona en el navegador de una computadora, 
 | Función | Cómo se usa |
 |---|---|
 | Ratón o táctil | Arrastrar para mirar; clic en las flechas amarillas (avanzar o regresar) y en los puntos celestes ⓘ |
-| Teclado | ← → girar · ↑ / N siguiente · ↓ / P anterior · L narrar · I información · M mapa · A ajustes · S o Esc detener la voz |
+| Teclado | ← → girar · ↑ / N siguiente · ↓ / P anterior · L narrar · I información · M mapa · A ajustes · H menú inicial · F pantalla completa · S o Esc detener la voz |
+| Menú inicial | Botón 🏠 «Menú inicial»: vuelve a la bienvenida para cambiar los modos de control sin perder la parada actual |
+| Pantalla completa | Botón ⛶ de la barra: amplía toda la página (escena, controles y subtítulos). No aparece si el navegador no lo permite (p. ej., iPhone) |
 | Un solo botón (barrido) | Los botones se resaltan en rojo uno por uno; ESPACIO, ENTER o un clic eligen. Velocidad ajustable |
-| Voz (Chrome o Edge) | «siguiente», «anterior», «izquierda», «derecha», «narrar», «información», «mapa», «detener», «cerrar», «ayuda» |
+| Voz (Chrome o Edge) | «siguiente», «anterior», «izquierda», «derecha», «narrar», «información», «mapa», «menú», «detener», «cerrar», «ayuda» |
 | Mirada | Mirar fijo un punto durante 1,5, 2 o 3 s para seleccionarlo (celular o visor) |
 | Recorrido automático | Avanza solo después de cada narración |
 | Visor VR | Botón «VR»; láser de los mandos para elegir; joystick para girar 30° |

@@ -40,7 +40,18 @@ html, body { margin: 0; height: 100%; background: var(--fondo); color: var(--tex
 
 /* Botón de VR de A-Frame: arriba a la derecha y más grande */
 .a-enter-vr { top: 16px !important; right: 16px !important; bottom: auto !important; }
-.a-enter-vr-button { width: 80px !important; height: 52px !important; }
+/* Sin visor VR, A-Frame convierte este botón en "pantalla completa" del lienzo y oculta la interfaz:
+   se usa en su lugar el botón propio de la barra de controles. */
+.a-enter-vr.fullscreen { display: none !important; }
+/* A-Frame ancla el botón con bottom: 0; hay que anclarlo arriba o queda fuera de la pantalla */
+.a-enter-vr-button {
+  top: 0 !important; bottom: auto !important;
+  width: 80px !important; height: 52px !important;
+  background-color: rgba(0, 0, 0, 0.6) !important;
+  border: 2px solid #fff !important;
+}
+.a-enter-vr-button:hover, .a-enter-vr-button:focus-visible { background-color: #ef2d5e !important; }
+.a-enter-vr-button:focus-visible { outline: 4px solid var(--foco) !important; outline-offset: 2px; }
 
 /* ===== Encabezado ===== */
 #encabezado {
@@ -96,7 +107,8 @@ button {
   padding: 6px 10px;
 }
 .controles .ico { font-size: 1.5rem; line-height: 1; }
-.controles .txt { font-size: 0.75rem; font-weight: 600; }
+.controles .txt { font-size: 0.75rem; font-weight: 600; text-align: center; line-height: 1.15; }
+.controles button[hidden] { display: none; }
 button:hover { background: rgba(255,255,255,0.18); }
 button.primario { background: var(--acento); color: var(--acento-texto); border-color: var(--acento); font-weight: 700; }
 button:disabled { opacity: 0.35; cursor: not-allowed; }
@@ -167,14 +179,14 @@ html.reducir-animaciones #fundido { transition-duration: 150ms; }
   :root { --tam-boton: 54px; font-size: 16px; }
   .controles {
     left: 8px; right: 8px; transform: none; width: auto; max-width: none;
-    display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; padding: 6px;
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; padding: 6px;
   }
   .controles button { min-width: 0; }
   .controles .txt { font-size: 0.65rem; }
-  .subtitulos { bottom: calc(var(--tam-boton) * 2 + 40px); font-size: 1rem; }
+  .subtitulos { bottom: calc(var(--tam-boton) * 2 + 60px); font-size: 1rem; }
   #encabezado { max-width: calc(100vw - 110px); padding: 8px 12px; }
   #encabezado h1 { font-size: 1.2rem; }
-  .aviso-referencial { top: auto; bottom: calc(var(--tam-boton) * 2 + 30px); right: 8px; }
+  .aviso-referencial { top: auto; bottom: calc(var(--tam-boton) * 2 + 50px); right: 8px; }
   .indicadores { top: 150px; max-width: 70vw; }
 }
 @media (prefers-reduced-motion: reduce) {

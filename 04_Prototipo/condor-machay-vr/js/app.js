@@ -481,8 +481,52 @@
       case 'info': abrirInfo(ESC[indice].info); break;
       case 'mapa': construirMapa(); abrirDialogo(dlgMapa); break;
       case 'ajustes': llenarFormulario(); abrirDialogo(dlgAjustes); break;
+      case 'pantalla': alternarPantallaCompleta(); break;
+      case 'menu': abrirMenuInicial(); break;
     }
   }
+
+  // Vuelve a mostrar la bienvenida para cambiar los modos de control, sin perder la parada actual.
+  function abrirMenuInicial() {
+    Object.keys(vinculos).forEach((id) => { document.getElementById(id).checked = !!ajustes[vinculos[id]]; });
+    if (recorridoIniciado) $('#bv-comenzar').textContent = 'Continuar recorrido';
+    abrirDialogo(dlgBienvenida);
+    dlgBienvenida.scrollTop = 0;
+  }
+  function cerrarBienvenida() {
+    if (recorridoIniciado) dlgBienvenida.close(); else comenzar();
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Pantalla completa de toda la página (escena + controles + subtítulos) */
+  /* El botón de A-Frame solo amplía el lienzo 3D y oculta la interfaz.  */
+  /* ------------------------------------------------------------------ */
+  function pantallaCompletaDisponible() {
+    return !!(document.fullscreenEnabled || document.webkitFullscreenEnabled);
+  }
+  function enPantallaCompleta() {
+    return !!(document.fullscreenElement || document.webkitFullscreenElement);
+  }
+  function alternarPantallaCompleta() {
+    const raiz = document.documentElement;
+    let peticion;
+    if (enPantallaCompleta()) {
+      peticion = (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+    } else {
+      peticion = (raiz.requestFullscreen || raiz.webkitRequestFullscreen).call(raiz);
+    }
+    if (peticion && peticion.catch) peticion.catch(() => anunciar('No se pudo cambiar a pantalla completa.'));
+  }
+  function actualizarBotonPantalla() {
+    const b = $('[data-accion="pantalla"]');
+    const activa = enPantallaCompleta();
+    b.setAttribute('aria-pressed', String(activa));
+    b.querySelector('.ico').textContent = activa ? '🗗' : '⛶';
+    b.querySelector('.txt').textContent = activa ? 'Salir de pantalla completa' : 'Pantalla completa';
+  }
+  $('[data-accion="pantalla"]').hidden = !pantallaCompletaDisponible();
+  document.addEventListener('fullscreenchange', actualizarBotonPantalla);
+  document.addEventListener('webkitfullscreenchange', actualizarBotonPantalla);
 
   /* ------------------------------------------------------------------ */
   /* Narración con voz sintética + subtítulos frase por frase            */
@@ -729,7 +773,8 @@
     const t = texto.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
     const tiene = (...p) => p.some((x) => t.includes(x));
     if (tiene('cerrar', 'salir')) { $$('dialog[open]').forEach((d) => { if (d !== dlgBienvenida) d.close(); }); cerrarPanelVR(); return; }
-    if (tiene('comenzar', 'empezar') && dlgBienvenida.open) { comenzar(); return; }
+    if (tiene('comenzar', 'empezar', 'continuar') && dlgBienvenida.open) { cerrarBienvenida(); return; }
+    if (tiene('menu')) { ejecutarAccion('menu'); return; }
     if (tiene('siguiente', 'avanzar', 'adelante', 'continuar')) { ejecutarAccion('siguiente'); return; }
     if (tiene('anterior', 'regresar', 'atras', 'volver')) { ejecutarAccion('anterior'); return; }
     if (tiene('izquierda')) { ejecutarAccion('girar-izq'); return; }
@@ -741,7 +786,7 @@
     if (tiene('ajuste', 'configura')) { ejecutarAccion('ajustes'); return; }
     if (tiene('inicio', 'reiniciar')) { irA(0); return; }
     if (tiene('ayuda')) {
-      Narrador.hablar(['Puedes decir: siguiente, anterior, izquierda, derecha, narrar, información, mapa, detener o cerrar.']);
+      Narrador.hablar(['Puedes decir: siguiente, anterior, izquierda, derecha, narrar, información, mapa, menú, detener o cerrar.']);
     }
   }
 
@@ -829,7 +874,7 @@
     const mapa = {
       ArrowLeft: 'girar-izq', ArrowRight: 'girar-der',
       ArrowUp: 'siguiente', ArrowDown: 'anterior', n: 'siguiente', p: 'anterior',
-      l: 'narrar', i: 'info', m: 'mapa', a: 'ajustes'
+      l: 'narrar', i: 'info', m: 'mapa', a: 'ajustes', f: 'pantalla', h: 'menu'
     };
     if (mapa[k]) { ev.preventDefault(); ejecutarAccion(mapa[k]); }
     if (k === 's' || k === 'Escape') { Narrador.detener(); cancelarAuto(); }
@@ -858,7 +903,7 @@
     if (ajustes.narracionAuto || ajustes.recorridoAuto) Narrador.hablar(e.narracion, programarAuto);
     else programarAuto();
   }
-  $('#bv-comenzar').addEventListener('click', comenzar);
+  $('#bv-comenzar').addEventListener('click', cerrarBienvenida);
 
   escena.addEventListener('enter-vr', () => {
     $$('dialog[open]').forEach((d) => d.close());
