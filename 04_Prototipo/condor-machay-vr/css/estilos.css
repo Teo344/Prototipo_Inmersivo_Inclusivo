@@ -39,7 +39,13 @@ html, body { margin: 0; height: 100%; background: var(--fondo); color: var(--tex
 .saltar:focus { top: 8px; }
 
 /* Botón de VR de A-Frame: arriba a la derecha y más grande */
-.a-enter-vr { top: 16px !important; right: 16px !important; bottom: auto !important; }
+.a-enter-vr {
+  position: fixed !important;
+  top: calc(24px + env(safe-area-inset-top, 0px)) !important;
+  right: calc(16px + env(safe-area-inset-right, 0px)) !important;
+  bottom: auto !important;
+  width: 80px !important; height: 52px !important; z-index: 20;
+}
 /* Sin visor VR, A-Frame convierte este botón en "pantalla completa" del lienzo y oculta la interfaz:
    se usa en su lugar el botón propio de la barra de controles. */
 .a-enter-vr.fullscreen { display: none !important; }
@@ -92,7 +98,7 @@ html.alto-contraste .subtitulos { background: #000; border: 2px solid #fff; }
 
 /* ===== Controles ===== */
 .controles {
-  position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 10;
+  position: fixed; left: 50%; bottom: calc(14px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 10;
   display: flex; gap: 8px; padding: 8px; flex-wrap: wrap; justify-content: center;
   background: var(--panel); border: 1px solid var(--borde); border-radius: calc(var(--radio) + 6px);
   width: max-content; max-width: calc(100vw - 16px);
